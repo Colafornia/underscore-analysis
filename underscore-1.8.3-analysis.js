@@ -23,49 +23,53 @@
   var ArrayProto = Array.prototype, ObjProto = Object.prototype;
   var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;
 
-  // Create quick reference variables for speed access to core prototypes.
+  // 缓存了 push、slice、toString、hasOwnProperty 四个方法
   var push = ArrayProto.push,
       slice = ArrayProto.slice,
       toString = ObjProto.toString,
       hasOwnProperty = ObjProto.hasOwnProperty;
 
-  // All **ECMAScript 5** native function implementations that we hope to use
-  // are declared here.
+  // 声明了 ES5 中的三个原生函数
   var nativeIsArray = Array.isArray,
       nativeKeys = Object.keys,
       nativeCreate = Object.create;
 
-  // Naked function reference for surrogate-prototype-swapping.
+  // 创建了一个裸函数用于扩展 prototype
   var Ctor = function(){};
 
-  // Create a safe reference to the Underscore object for use below.
+  // Underscore 所封装的函数都是作为函数对象绑定在 `_` 上
+  // `_` 是一个构造函数
   var _ = function(obj) {
+    // 如果 obj 是 `_` 的引用则直接返回 obj
     if (obj instanceof _) return obj;
+    // 如果 obj 不是 `_` 函数的实例
+    // 则调用 new 运算符，返回实例化的对象
     if (!(this instanceof _)) return new _(obj);
     this._wrapped = obj;
   };
 
-  // Export the Underscore object for **Node.js**, with
-  // backwards-compatibility for their old module API. If we're in
-  // the browser, add `_` as a global object.
-  // (`nodeType` is checked to ensure that `module`
-  // and `exports` are not HTML elements.)
+  // 把 `_` 变量/方法赋值给全局环境中的 `_`
+  // 客户端（浏览器）中 window._ = _
+  // node.js 中 exports._ = _
   if (typeof exports != 'undefined' && !exports.nodeType) {
+    // node
     if (typeof module != 'undefined' && !module.nodeType && module.exports) {
+      // 不太懂 连等可以么？
       exports = module.exports = _;
     }
     exports._ = _;
   } else {
+    // 客户端
     root._ = _;
   }
 
-  // Current version.
+  // 版本号
   _.VERSION = '1.8.3';
 
-  // Internal function that returns an efficient (for current engines) version
-  // of the passed-in callback, to be repeatedly applied in other Underscore
-  // functions.
+  // 内部方法 优化回调
   var optimizeCb = function(func, context, argCount) {
+    // void 0 即为 undefined
+    // 这种用法避免 undefined 被覆盖（即 undefined 在 JavaScript 中不是保留字
     if (context === void 0) return func;
     switch (argCount == null ? 3 : argCount) {
       case 1: return function(value) {
