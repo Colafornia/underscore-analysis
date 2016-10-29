@@ -13,11 +13,12 @@
 
 2. 说不完的 `call` & `apply` & `bind`
 
-  [点击链接传送至 stackoverflow](http://stackoverflow.com/questions/15455009/javascript-call-apply-vs-bind)
-  [点击链接传送至 一篇深入浅出的总结](http://www.cnblogs.com/coco1s/p/4833199.html)
+   [点击链接传送至 stackoverflow](http://stackoverflow.com/questions/15455009/javascript-call-apply-vs-bind)
 
-  - apply 、 call 、bind 三者都是用来改变函数的this对象的指向
-  - apply 、 call 、bind 三者第一个参数都是this要指向的对象，即想制定的上下文
-  - apply 、 call 、bind 三者都可以利用后续参数传参
-  - bind 是返回改变上下文后的函数，便于稍后调用；apply 、 call 则是改变上下文后立即执行该函数
-  - apply 、 call 接受参数的方式不同，apply 要将参数放入数组里传入，call 要把参数按顺序挨个传入
+   [点击链接传送至 一篇深入浅出的总结](http://www.cnblogs.com/coco1s/p/4833199.html)
+
+   - apply 、 call 、bind 三者都是用来改变函数的this对象的指向
+   - apply 、 call 、bind 三者第一个参数都是this要指向的对象，即想制定的上下文
+   - apply 、 call 、bind 三者都可以利用后续参数传参
+   - bind 是返回改变上下文后的函数，便于稍后调用；apply 、 call 则是改变上下文后立即执行该函数
+   - apply 、 call 接受参数的方式不同，apply 要将参数放入数组里传入，call 要把参数按顺序挨个传入
