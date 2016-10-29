@@ -34,7 +34,7 @@
       nativeKeys = Object.keys,
       nativeCreate = Object.create;
 
-  // 创建了一个裸函数用于扩展 prototype
+  // 创建了一个裸函数 在后面代码中用于扩展 prototype
   var Ctor = function(){};
 
   // Underscore 所封装的函数都是作为函数对象绑定在 `_` 上
@@ -89,27 +89,30 @@
     };
   };
 
+  // 声明内置 Iteratee 迭代器
   var builtinIteratee;
 
-  // An internal function to generate callbacks that can be applied to each
+  // 定义内部函数 cb
   // element in a collection, returning the desired result — either `identity`,
   // an arbitrary callback, a property matcher, or a property accessor.
   var cb = function(value, context, argCount) {
+    // 接受三个参数
     if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);
+    // 空值则返回传入值， _.identity 为后面封装好的方法
     if (value == null) return _.identity;
+    // 是方法 调用 optimizeCb
     if (_.isFunction(value)) return optimizeCb(value, context, argCount);
     if (_.isObject(value)) return _.matcher(value);
+    // 以上四个判断都不符合 则返回 所传入对象的key值
     return _.property(value);
   };
 
-  // External wrapper for our callback generator. Users may customize
-  // `_.iteratee` if they want additional predicate/iteratee shorthand styles.
-  // This abstraction hides the internal-only argCount argument.
+  // 用 _.iteratee 包装 cb 并提供外部访问
   _.iteratee = builtinIteratee = function(value, context) {
     return cb(value, context, Infinity);
   };
 
-  // Similar to ES6's rest param (http://ariya.ofilabs.com/2013/03/es6-and-rest-parameter.html)
+  // 类似于 ES6 的 rest param (不定参数)
   // This accumulates the arguments passed into an array, after a given index.
   var restArgs = function(func, startIndex) {
     startIndex = startIndex == null ? func.length - 1 : +startIndex;
@@ -134,16 +137,21 @@
     };
   };
 
-  // An internal function for creating a new object that inherits from another.
+  // 创建一个干净且只存在具有想要其具有 prototype 的函数
   var baseCreate = function(prototype) {
+    // 如果 prototype 参数不是对象
     if (!_.isObject(prototype)) return {};
+    // 浏览器是否支持用原生的 Object.create 来创建，可以则直接调用原生方法创建
     if (nativeCreate) return nativeCreate(prototype);
+    // 用空函数创建一个具有所传入 prototype 的函数
     Ctor.prototype = prototype;
     var result = new Ctor;
+    // 创建，赋值完成后再重置 Ctor 空函数
     Ctor.prototype = null;
     return result;
   };
 
+  // 获取、设置 obj 的 key 值，obj 中有所传入的 key 则获取，无 key 则创建
   var property = function(key) {
     return function(obj) {
       return obj == null ? void 0 : obj[key];
@@ -1146,7 +1154,7 @@
     return obj;
   };
 
-  // Returns whether an object has a given set of `key:value` pairs.
+  // 判断对象是否包含所传入的 `key:value` 键值对
   _.isMatch = function(object, attrs) {
     var keys = _.keys(attrs), length = keys.length;
     if (object == null) return !length;
@@ -1383,8 +1391,8 @@
     };
   };
 
-  // Returns a predicate for checking whether an object has a given set of
-  // `key:value` pairs.
+  // 判断对象是否包含某些 `key:value` 键值对
+  // 返回布尔值
   _.matcher = _.matches = function(attrs) {
     attrs = _.extendOwn({}, attrs);
     return function(obj) {
