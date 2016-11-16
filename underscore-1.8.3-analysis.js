@@ -162,27 +162,33 @@
   // should be iterated as an array or as an object.
   // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
   // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+  // 设置一个最大值 2的53次幂 等于 9007199254740991
   var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
+  // 有 length 属性则获取 无则创建
   var getLength = property('length');
+  // 判断 返回布尔值 判断传入参数是否具有 length 属性且有值
   var isArrayLike = function(collection) {
     var length = getLength(collection);
     return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
   };
 
   // Collection Functions
+  // Collection 集合元素相关函数
   // --------------------
 
-  // The cornerstone, an `each` implementation, aka `forEach`.
-  // Handles raw objects in addition to array-likes. Treats all
-  // sparse array-likes as if they were dense.
+  // 遍历数组及类数组 (array-like) 结构
   _.each = _.forEach = function(obj, iteratee, context) {
+    // 前面封装好的优化回调函数
     iteratee = optimizeCb(iteratee, context);
     var i, length;
     if (isArrayLike(obj)) {
+      // 有 length 则遍历集合中的每一项
+      // for 循环中把 length 赋给变量并放在循环体外 提升了循环性能
       for (i = 0, length = obj.length; i < length; i++) {
         iteratee(obj[i], i, obj);
       }
     } else {
+      // 没 length 则遍历对象上的属性
       var keys = _.keys(obj);
       for (i = 0, length = keys.length; i < length; i++) {
         iteratee(obj[keys[i]], keys[i], obj);
@@ -191,12 +197,13 @@
     return obj;
   };
 
-  // Return the results of applying the iteratee to each element.
+  // 遍历对象，不会修改 obj 直接 return
   _.map = _.collect = function(obj, iteratee, context) {
     iteratee = cb(iteratee, context);
     var keys = !isArrayLike(obj) && _.keys(obj),
         length = (keys || obj).length,
         results = Array(length);
+    // results 是与 obj 的 length 相同的空数组
     for (var index = 0; index < length; index++) {
       var currentKey = keys ? keys[index] : index;
       results[index] = iteratee(obj[currentKey], currentKey, obj);
@@ -209,6 +216,9 @@
     // Wrap code that reassigns argument variables in a separate function than
     // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
     var reducer = function(obj, iteratee, memo, initial) {
+      // 传入的 object 无 length 属性且 不是空对象的话 keys 为 true
+      // length 为 （类）数组长度 或 对象属性数
+      // index 为 0 或 obj 的最后一项（最后一个属性）
       var keys = !isArrayLike(obj) && _.keys(obj),
           length = (keys || obj).length,
           index = dir > 0 ? 0 : length - 1;
@@ -218,8 +228,10 @@
       }
       for (; index >= 0 && index < length; index += dir) {
         var currentKey = keys ? keys[index] : index;
+        // memo 为单次迭代返回值
         memo = iteratee(memo, obj[currentKey], currentKey, obj);
       }
+      // 返回 memo 供下次迭代使用
       return memo;
     };
 
@@ -229,67 +241,82 @@
     };
   };
 
-  // **Reduce** builds up a single result from a list of values, aka `inject`,
-  // or `foldl`.
+  // reduce 方法把list中元素归结为一个单独的数值
+  // 别名为 inject 和 foldl
   _.reduce = _.foldl = _.inject = createReduce(1);
 
-  // The right-associative version of reduce, also known as `foldr`.
+  // reducRight是从右侧开始组合的元素的reduce函数
   _.reduceRight = _.foldr = createReduce(-1);
 
-  // Return the first value which passes a truth test. Aliased as `detect`.
+  // 寻找数组或者对象中第一个满足条件(通过predicate迭代函数真值检测)的元素
+  // 并返回该元素值
+  // 别名 detect
   _.find = _.detect = function(obj, predicate, context) {
     var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;
     var key = keyFinder(obj, predicate, context);
     if (key !== void 0 && key !== -1) return obj[key];
   };
 
-  // Return all the elements that pass a truth test.
-  // Aliased as `select`.
+  // 返回数组或者对象中所有 满足条件(通过predicate迭代函数真值检测)的元素
+  // 传入的是 （类）数组 则把元素值存到数组中返回
+  // 传入的是 对象 则把属性值存到数组中返回
+  // 别名 select
   _.filter = _.select = function(obj, predicate, context) {
     var results = [];
     predicate = cb(predicate, context);
+    // 遍历所有元素 符合条件的 push 到返回数组中
     _.each(obj, function(value, index, list) {
       if (predicate(value, index, list)) results.push(value);
     });
     return results;
   };
 
-  // Return all the elements for which a truth test fails.
+  // 返回数组或者对象中所有 不满足条件(没通过predicate迭代函数真值检测)的元素
   _.reject = function(obj, predicate, context) {
     return _.filter(obj, _.negate(cb(predicate)), context);
   };
 
-  // Determine whether all of the elements match a truth test.
-  // Aliased as `all`.
+  // 检测数组或对象中所有元素是否都满足条件(通过predicate迭代函数真值检测)
+  // 别名 all
   _.every = _.all = function(obj, predicate, context) {
     predicate = cb(predicate, context);
     var keys = !isArrayLike(obj) && _.keys(obj),
         length = (keys || obj).length;
     for (var index = 0; index < length; index++) {
       var currentKey = keys ? keys[index] : index;
+      // 一旦不满足条件则跳出循环 返回 false
       if (!predicate(obj[currentKey], currentKey, obj)) return false;
     }
+    // 在上面的循环中未跳出则意味着所有元素都满足条件
+    // 返回 true
     return true;
   };
 
-  // Determine if at least one element in the object matches a truth test.
-  // Aliased as `any`.
+  // 检测数组或对象中 是否至少有一个元素 满足条件(通过predicate迭代函数真值检测)
+  // 别名 any
   _.some = _.any = function(obj, predicate, context) {
     predicate = cb(predicate, context);
     var keys = !isArrayLike(obj) && _.keys(obj),
         length = (keys || obj).length;
     for (var index = 0; index < length; index++) {
       var currentKey = keys ? keys[index] : index;
+      // 一旦有元素满足条件则跳出循环
       if (predicate(obj[currentKey], currentKey, obj)) return true;
     }
     return false;
   };
 
-  // Determine if the array or object contains a given item (using `===`).
-  // Aliased as `includes` and `include`.
+  // 检测数组或对象中 是否存在所传入的元素
+  // 用法 _.contains(list, value)
+  // 使用 === 严格等于来判断
+  // 别名 includes 和 include
   _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
+    // 传入的 obj 非（类）数组的话 取其属性值数组
     if (!isArrayLike(obj)) obj = _.values(obj);
+    // fromIndex 为查询起始位置
+    // 没有 fromIndex 则从首项开始查询
     if (typeof fromIndex != 'number' || guard) fromIndex = 0;
+    // 返回布尔值
     return _.indexOf(obj, item, fromIndex) >= 0;
   };
 
@@ -902,7 +929,8 @@
     return _.partial(wrapper, func);
   };
 
-  // Returns a negated version of the passed-in predicate.
+  // 返回 predicate 方法的对立方法
+  // 即对 predicate 方法迭代结果取补集
   _.negate = function(predicate) {
     return function() {
       return !predicate.apply(this, arguments);
@@ -974,14 +1002,17 @@
     }
   };
 
-  // Retrieve the names of an object's own properties.
-  // Delegates to **ECMAScript 5**'s native `Object.keys`.
+  // 返回对象的属性名的数组
+  // 仅返回对象自有属性，非继承来的属性
   _.keys = function(obj) {
+    // 容错 传入的非对象则返回空数组
     if (!_.isObject(obj)) return [];
+    // 若浏览器支持 ES5 Object.key() 方法 则使用原生方法
     if (nativeKeys) return nativeKeys(obj);
     var keys = [];
     for (var key in obj) if (_.has(obj, key)) keys.push(key);
-    // Ahem, IE < 9.
+    // 兼容 IE9 以下
+    // IE9 以下无法用 for in 枚举对象属性
     if (hasEnumBug) collectNonEnumProps(obj, keys);
     return keys;
   };
@@ -996,7 +1027,7 @@
     return keys;
   };
 
-  // Retrieve the values of an object's properties.
+  // 取对象中所有属性的值 作为数组返回之
   _.values = function(obj) {
     var keys = _.keys(obj);
     var length = keys.length;
