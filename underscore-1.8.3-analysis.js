@@ -212,9 +212,13 @@
   };
 
   // Create a reducing function iterating left or right.
+  // 为  _.reduce 和  _.reduceRight 返回函数
+  // dir 只可能为 1 或 -1
   var createReduce = function(dir) {
     // Wrap code that reassigns argument variables in a separate function than
     // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
+    // obj 为（类）数组或对象
+    // memo 为初始值
     var reducer = function(obj, iteratee, memo, initial) {
       // 传入的 object 无 length 属性且 不是空对象的话 keys 为 true
       // length 为 （类）数组长度 或 对象属性数
@@ -224,6 +228,7 @@
           index = dir > 0 ? 0 : length - 1;
       if (!initial) {
         memo = obj[keys ? keys[index] : index];
+        // 根据 dir 确定向左或向右遍历
         index += dir;
       }
       for (; index >= 0 && index < length; index += dir) {
@@ -242,6 +247,7 @@
   };
 
   // reduce 方法把list中元素归结为一个单独的数值
+  // 用法 _.reduce(list, iteratee, [memo], [context]) 接受4个参数
   // 别名为 inject 和 foldl
   _.reduce = _.foldl = _.inject = createReduce(1);
 
@@ -320,28 +326,39 @@
     return _.indexOf(obj, item, fromIndex) >= 0;
   };
 
-  // Invoke a method (with arguments) on every item in a collection.
+  // 数组或对象中的每一个元素都执行 methodName 方法
+  // 返回调用后的结果
+  // 用法 _.invoke(list, methodName, *arguments)
+  // restArgs 为前面117-138行封装好的不定参数方法
+  // method 参数后的参数会被当做参数传入 method 方法中
   _.invoke = restArgs(function(obj, method, args) {
+    // 把判断结果放在循环外 作为函数局部变量 减少判断和赋值次数
     var isFunc = _.isFunction(method);
+    // 用 map 方法对每一个元素调用 method 方法
+    // 不修改 obj 仅仅返回调用后的结果数组
     return _.map(obj, function(value) {
+      // 如果 method 不是函数，则可能是 obj 的 key 值
+      // obj[method] 可能是函数
       var func = isFunc ? method : value[method];
       return func == null ? func : func.apply(value, args);
     });
   });
 
-  // Convenience version of a common use case of `map`: fetching a property.
+  // 获取对象或数组中的每一个元素key属性的值
+  // 返回结果数组
+  // 用法 _.pluck(list, propertyName)
   _.pluck = function(obj, key) {
     return _.map(obj, _.property(key));
   };
 
-  // Convenience version of a common use case of `filter`: selecting only objects
-  // containing specific `key:value` pairs.
+  // 返回对象或数组中元素 具有 attrs 键值对的元素数组
+  // 用法 _.where(list, properties)
   _.where = function(obj, attrs) {
     return _.filter(obj, _.matcher(attrs));
   };
 
-  // Convenience version of a common use case of `find`: getting the first object
-  // containing specific `key:value` pairs.
+  // 返回对象或数组中 具有 attrs 键值对的第一个元素
+  // 用法 _.findWhere(list, properties)
   _.findWhere = function(obj, attrs) {
     return _.find(obj, _.matcher(attrs));
   };
