@@ -363,12 +363,17 @@
     return _.find(obj, _.matcher(attrs));
   };
 
-  // Return the maximum element (or element-based computation).
+  // 返回对象或数组中的 最大值
+  // 若传入 iteratee 则对每一个元素进行 iteratee 迭代后找到最大值
+  // 返回最大值 或 -Infinity
+  // 用法 _.max(list, [iteratee], [context])
   _.max = function(obj, iteratee, context) {
     var result = -Infinity, lastComputed = -Infinity,
         value, computed;
     if (iteratee == null || (typeof iteratee == 'number' && typeof obj[0] != 'object') && obj != null) {
+      // obj 没有 length 属性的话则取其 value 值数组
       obj = isArrayLike(obj) ? obj : _.values(obj);
+      // 遍历 找最大值
       for (var i = 0, length = obj.length; i < length; i++) {
         value = obj[i];
         if (value != null && value > result) {
@@ -376,6 +381,7 @@
         }
       }
     } else {
+      // 迭代后找最大值
       iteratee = cb(iteratee, context);
       _.each(obj, function(v, index, list) {
         computed = iteratee(v, index, list);
@@ -388,7 +394,8 @@
     return result;
   };
 
-  // Return the minimum element (or element-based computation).
+  // 类似于 _.max
+  // 找最小值
   _.min = function(obj, iteratee, context) {
     var result = Infinity, lastComputed = Infinity,
         value, computed;
@@ -413,7 +420,7 @@
     return result;
   };
 
-  // Shuffle a collection.
+  // 将集合乱序
   _.shuffle = function(obj) {
     return _.sample(obj, Infinity);
   };
