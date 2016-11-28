@@ -39,12 +39,15 @@
 
   // Underscore 所封装的函数都是作为函数对象绑定在 `_` 上
   // `_` 是一个构造函数
+  // 支持无 new 调用的构造函数
+  // 将传入的参数（实际要操作的数据）赋值给 this._wrapped 属性
   var _ = function(obj) {
     // 如果 obj 是 `_` 的引用则直接返回 obj
     if (obj instanceof _) return obj;
     // 如果 obj 不是 `_` 函数的实例
     // 则调用 new 运算符，返回实例化的对象
     if (!(this instanceof _)) return new _(obj);
+    // 把 obj 赋值给 this._wrapped
     this._wrapped = obj;
   };
 
@@ -422,53 +425,77 @@
 
   // 将集合乱序
   _.shuffle = function(obj) {
+    // 用 _.sample 取得随机样本
+    // 简单粗暴地用 Infinity 表示无论 obj 是集合还是对象，都将其所有元素随机
     return _.sample(obj, Infinity);
   };
 
-  // Sample **n** random values from a collection using the modern version of the
-  // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
-  // If **n** is not specified, returns a single random element.
-  // The internal `guard` argument allows it to work with `map`.
+  // 从集合中返回一个随机样本 传入n表示需返回样本中的元素个数
+  // 如果参数是对象 则返回由 values 组成的数组
+  // 用法 _.sample(list, [n])
   _.sample = function(obj, n, guard) {
     if (n == null || guard) {
       if (!isArrayLike(obj)) obj = _.values(obj);
       return obj[_.random(obj.length - 1)];
     }
+    // 有 length 则克隆对象 否则返回对象的value值数组
     var sample = isArrayLike(obj) ? _.clone(obj) : _.values(obj);
     var length = getLength(sample);
+    // 做了一个返回数组元素个数的处理
+    // 传入的参数 n 大于集合长度的话 返回集合所有元素
+    // 比如 _.shuffle 中传入的 Infinity 意味将集合中所有元素随机
+    // 小于的话 返回 n 个
+    // 因此 n 值应该是小于等于 length
     n = Math.max(Math.min(n, length), 0);
     var last = length - 1;
     for (var index = 0; index < n; index++) {
+      // 随机取一个数值在 index 和 last 中的值作为随机出来的索引项
+      // 即 rand 大于等于 index
       var rand = _.random(index, last);
+      // 交换 index 项 和 rand 项的值
+      // 并且避免了随机数组中有相同值
+      // (否则由于 rand > index 随着index的增加可能依然会取到同样的rand)
       var temp = sample[index];
       sample[index] = sample[rand];
       sample[rand] = temp;
     }
+    // 结果返回为由n个sample[rand]组成的数组
     return sample.slice(0, n);
   };
 
-  // Sort the object's values by a criterion produced by an iteratee.
+  // 返回一个排序后的list拷贝副本。如果传递iteratee参数，iteratee将作为list中每个值的排序依据
   _.sortBy = function(obj, iteratee, context) {
     var index = 0;
     iteratee = cb(iteratee, context);
+    // 根据指定的 key 返回 values 数组
+    // _.plunk(_.map(), 'value')
     return _.pluck(_.map(obj, function(value, key, list) {
+      // 将 obj 的每一个元素/属性都改装成如下形式
+      // 每个元素/属性上都有自己的 value值，index，迭代后的值
       return {
         value: value,
         index: index++,
+        // 元素经过迭代函数迭代后的值
         criteria: iteratee(value, key, list)
       };
+      // 调用 JavaScript 数组原生的 sort 方法 升序排列
     }).sort(function(left, right) {
+      // 进行迭代后的值的比较
       var a = left.criteria;
       var b = right.criteria;
       if (a !== b) {
         if (a > b || a === void 0) return 1;
         if (a < b || b === void 0) return -1;
       }
+      // 值相同的话 则 index 比较
       return left.index - right.index;
     }), 'value');
   };
 
-  // An internal function used for aggregate "group by" operations.
+  // 内部用的工具函数
+  // 为 _.groupBy, _.indexBy 以及 _.countBy 提供方法
+  // behavior 为分类规则函数
+  // partition 是一个布尔值，决定是否要把集合分为满足规则，不满足规则的两组
   var group = function(behavior, partition) {
     return function(obj, iteratee, context) {
       var result = partition ? [[], []] : {};
@@ -1648,12 +1675,15 @@
   // Add all of the Underscore functions to the wrapper object.
   _.mixin(_);
 
-  // Add all mutator Array functions to the wrapper.
+  //  把 Array 原型链上有的方法都添加到 underscore 全局环境的原型链中
+  // 这些方法都可以直接调用
   _.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
     var method = ArrayProto[name];
     _.prototype[name] = function() {
+      // obj 为调用 _ 的方法
       var obj = this._wrapped;
       method.apply(obj, arguments);
+      // 这里是为了IE做的兼容 http://stackoverflow.com/questions/24725560/javascript-why-need-to-delete-the-0-index-of-an-array
       if ((name === 'shift' || name === 'splice') && obj.length === 0) delete obj[0];
       return chainResult(this, obj);
     };
