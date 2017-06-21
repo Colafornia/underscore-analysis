@@ -70,6 +70,7 @@
   _.VERSION = '1.8.3';
 
   // 内部方法 优化回调
+  // 传入待优化的回调函数 func，以及迭代回调需要的参数个数 argCount，根据参数个数分情况进行优化
   var optimizeCb = function(func, context, argCount) {
     // void 0 即为 undefined
     // 这种用法避免 undefined 被覆盖（即 undefined 在 JavaScript 中不是保留字
@@ -78,11 +79,14 @@
       case 1: return function(value) {
         return func.call(context, value);
       };
-      // The 2-parameter case has been omitted only because no current consumers
-      // made use of it.
+      // 目前还没有情况涉及到有两个参数的 iteratee
+      // 有三个参数的话，就为 当前迭代元素值，其索引，所被迭代的集合
+      // 在 _.map, _.each, _.filter 等函数中均为这种情况
       case 3: return function(value, index, collection) {
         return func.call(context, value, index, collection);
       };
+      // 四个参数，累加器，当前迭代元素值，其索引，所被迭代集合
+      // _.reduce 为这种情况，需传入初始值，否则将集合中第一个元素设置为初始值，迭代从第二个元素开始
       case 4: return function(accumulator, value, index, collection) {
         return func.call(context, accumulator, value, index, collection);
       };
@@ -96,17 +100,19 @@
   var builtinIteratee;
 
   // 定义内部函数 cb
+  // 使集合中的每一个元素生成回调
   // element in a collection, returning the desired result — either `identity`,
   // an arbitrary callback, a property matcher, or a property accessor.
   var cb = function(value, context, argCount) {
     // 接受三个参数
     if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);
-    // 空值则返回传入值， _.identity 为后面封装好的方法
+    // 空值则返回传入值， _.identity 为后面封装好的方法 默认回调返回 value
     if (value == null) return _.identity;
     // 是方法 调用 optimizeCb
     if (_.isFunction(value)) return optimizeCb(value, context, argCount);
+    // 参数是对象，则去判断是否包含键值对
     if (_.isObject(value)) return _.matcher(value);
-    // 以上四个判断都不符合 则返回 所传入对象的key值
+    // 默认返回获取对象属性的函数
     return _.property(value);
   };
 
@@ -116,21 +122,32 @@
   };
 
   // 类似于 ES6 的 rest param (不定参数)
+  // 一个包装器，包装函数 func，使之支持 rest 参数
+  // func 为想要赋予支持 rest 参数能力的函数
+  // startIndex 从第几个参数开始为 rest 参数
   // This accumulates the arguments passed into an array, after a given index.
   var restArgs = function(func, startIndex) {
+    // 没有 stratIndex 则默认函数最后一个参数为 rest 参数
     startIndex = startIndex == null ? func.length - 1 : +startIndex;
     return function() {
+      // rest 参数长度 （做了个校正，避免为负数
       var length = Math.max(arguments.length - startIndex, 0),
           rest = Array(length),
           index = 0;
+      // 把参数塞进 rest 数组
       for (; index < length; index++) {
         rest[index] = arguments[index + startIndex];
       }
+      // 三种情况
       switch (startIndex) {
+        // func(...rest)
         case 0: return func.call(this, rest);
+        // func(a, ...rest)
         case 1: return func.call(this, arguments[0], rest);
         case 2: return func.call(this, arguments[0], arguments[1], rest);
       }
+      // 非上述三种情况
+      // 创建一个 args 数组做参数
       var args = Array(startIndex + 1);
       for (index = 0; index < startIndex; index++) {
         args[index] = arguments[index];
@@ -497,7 +514,11 @@
   // behavior 为分类规则函数
   // partition 是一个布尔值，决定是否要把集合分为满足规则，不满足规则的两组
   var group = function(behavior, partition) {
+    // 对每个元素执行 iteratee
+    // 并将结果传入 behavior 执行
     return function(obj, iteratee, context) {
+      // 主要提供分类方式和集合元素的遍历
+      // 需分组则返回包含两个数组的数组 否则返回 Object
       var result = partition ? [[], []] : {};
       iteratee = cb(iteratee, context);
       _.each(obj, function(value, index) {
@@ -508,30 +529,40 @@
     };
   };
 
-  // Groups the object's values by a criterion. Pass either a string attribute
-  // to group by, or a function that returns the criterion.
+  // 把一个集合分组为多个集合
+  // 用法 _.groupBy(list, iteratee, [context])
+  // 如果 iterator 是一个字符串而不是函数, 那么将使用 iterator 作为各元素的属性名来对比进行分组
   _.groupBy = group(function(result, value, key) {
+    // 分类规则函数
     if (_.has(result, key)) result[key].push(value); else result[key] = [value];
   });
 
-  // Indexes the object's values by a criterion, similar to `groupBy`, but for
-  // when you know that your index values will be unique.
+  // 用法 _.indexBy(list, iteratee, [context])
+  // 按元素键来分组
   _.indexBy = group(function(result, value, key) {
     result[key] = value;
   });
 
-  // Counts instances of an object that group by a certain criterion. Pass
-  // either a string attribute to count by, or a function that returns the
-  // criterion.
+  // 用法 _.countBy(list, iteratee, [context])
+  // 分组，返回每组元素个数
   _.countBy = group(function(result, value, key) {
+    // 已有的则累加，没有的则初始计为1
     if (_.has(result, key)) result[key]++; else result[key] = 1;
   });
 
+  // 匹配指定区域的unicode字符,然后以数组形式返回
+  // https://www.zhihu.com/question/38324041
   var reStrSymbol = /[^\ud800-\udfff]|[\ud800-\udbff][\udc00-\udfff]|[\ud800-\udfff]/g;
-  // Safely create a real, live array from anything iterable.
+
+  // 用法 _.toArray(list)
+  // 把任意（可迭代）对象转换为数组
+  // 常用的是转换 arguments 对象
   _.toArray = function(obj) {
     if (!obj) return [];
+    // 处理数组
+    // Array.prototype.slice.call(arguments, indexes);
     if (_.isArray(obj)) return slice.call(obj);
+    // 处理字符串
     if (_.isString(obj)) {
       // Keep surrogate pair characters together
       return obj.match(reStrSymbol);
@@ -540,85 +571,99 @@
     return _.values(obj);
   };
 
-  // Return the number of elements in an object.
+  // 用法 _.size(list)
+  // 返回 list 的长度
   _.size = function(obj) {
     if (obj == null) return 0;
+    // 有 length 属性则直接返回 length
+    // 没有则发挥 key 个数
     return isArrayLike(obj) ? obj.length : _.keys(obj).length;
   };
 
-  // Split a collection into two arrays: one whose elements all satisfy the given
-  // predicate, and one whose elements all do not satisfy the predicate.
+  // 用法 _.partition(array, predicate)
+  // 按照 predicate 把数组分为 满足要求，不满足要求的两组
   _.partition = group(function(result, value, pass) {
     result[pass ? 0 : 1].push(value);
   }, true);
 
   // Array Functions
+  // Array 相关函数
   // ---------------
 
-  // Get the first element of an array. Passing **n** will return the first N
-  // values in the array. Aliased as `head` and `take`. The **guard** check
-  // allows it to work with `_.map`.
+  // 用法 _.first(array, [n]) 别名 head/take
+  // 返回数组中第一个元素
+  // 传入 n 则返回数组的前n个元素
   _.first = _.head = _.take = function(array, n, guard) {
     if (array == null || array.length < 1) return void 0;
     if (n == null || guard) return array[0];
     return _.initial(array, array.length - n);
   };
 
-  // Returns everything but the last entry of the array. Especially useful on
-  // the arguments object. Passing **n** will return all the values in
-  // the array, excluding the last N.
+  // 用法 _.initial(array, [n])
+  // 返回数组中除了最后一个元素外的其他全部元素
+  // 传入 n 则排除数组最后的n个元素
   _.initial = function(array, n, guard) {
     return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
   };
 
-  // Get the last element of an array. Passing **n** will return the last N
-  // values in the array.
+  // 类似的 返回数组中从右到左指定数目 n 的结果集
   _.last = function(array, n, guard) {
     if (array == null || array.length < 1) return void 0;
     if (n == null || guard) return array[array.length - 1];
     return _.rest(array, Math.max(0, array.length - n));
   };
 
-  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
-  // Especially useful on the arguments object. Passing an **n** will return
-  // the rest N values in the array.
+  // 别名 tail/drop
+  // 对于 arguments 对象很实用
+  // 用于返回数组中从右到左指定数目 Array.length - n 的结果集
   _.rest = _.tail = _.drop = function(array, n, guard) {
     return slice.call(array, n == null || guard ? 1 : n);
   };
 
-  // Trim out all falsy values from an array.
+  // 返回除去'false, null, 0, "", undefined, NaN'的新数组
   _.compact = function(array) {
+    // Boolean 是 JavaScript 内置函数 用于 Boolean 判断
     return _.filter(array, Boolean);
   };
 
-  // Internal implementation of a recursive `flatten` function.
+  // 内部方法 数组拍平
+  // shallow 是否只展开一层/即是否为浅度展开
+  // strict 是否为严格模式
+  // output 指定输出数组，将展开后数组添加到输出数组的尾部
   var flatten = function(input, shallow, strict, output) {
     output = output || [];
+    // 输出数组下标
     var idx = output.length;
     for (var i = 0, length = getLength(input); i < length; i++) {
       var value = input[i];
       if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {
-        // Flatten current level of array or arguments object.
+        // 当前元素为数组、集合、arguments
+        // 进行拍平
         if (shallow) {
           var j = 0, len = value.length;
+          // 只展开一层，遍历一遍这个集合就行，一边遍历一边把每个元素塞到 output
           while (j < len) output[idx++] = value[j++];
         } else {
+          // 深度展开，递归调用
           flatten(value, shallow, strict, output);
+          // 更新下标
           idx = output.length;
         }
       } else if (!strict) {
+        // 如果不是严格模式，可以将非数组、集合、arguments 的元素直接塞到 output
         output[idx++] = value;
       }
     }
     return output;
   };
 
-  // Flatten out an array, either recursively (by default), or just one level.
+  // _.flatten(array, [shallow])
+  // 把嵌套任意层数的数组展开 如果传 shallow 则只展开一层
   _.flatten = function(array, shallow) {
     return flatten(array, shallow, false);
   };
 
-  // Return a version of the array that does not contain the specified value(s).
+  // 返回一个不包含 otherArrays 中元素的，array 的副本
   _.without = restArgs(function(array, otherArrays) {
     return _.difference(array, otherArrays);
   });
@@ -841,6 +886,10 @@
   // arguments pre-filled, without changing its dynamic `this` context. _ acts
   // as a placeholder by default, allowing any combination of arguments to be
   // pre-filled. Set `_.partial.placeholder` for a custom placeholder argument.
+  // 偏函数，返回的新函数是原函数的一部分
+  // 偏函数是相对于原函数而言的，偏的意思是部分，原函数的部分参数或者变量被预置形成的新函数就是偏函数
+  // _.partial 是一个偏函数创造器
+  // 可以通过重置 _.partial.placeholder 自定义一个占位符
   _.partial = restArgs(function(func, boundArgs) {
     var placeholder = _.partial.placeholder;
     var bound = function() {
@@ -849,7 +898,9 @@
       for (var i = 0; i < length; i++) {
         args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i];
       }
+      // 如果还有参数，一并塞入 args
       while (position < arguments.length) args.push(arguments[position++]);
+      // 不改变上下文
       return executeBound(func, bound, this, this, args);
     };
     return bound;
@@ -870,28 +921,35 @@
     }
   });
 
-  // Memoize an expensive function by storing its results.
+  // 缓存函数创建器,适用于需要重复计算的函数
+  // hasher 为缓存获取方法，如果传入 hasher 则用 hasher 的返回值作为 key 存储函数的计算结果
+  // var fibonacci = _.memoize(function(n) {
+  //   return n < 2 ? n: fibonacci(n - 1) + fibonacci(n - 2);
+  // });
   _.memoize = function(func, hasher) {
     var memoize = function(key) {
       var cache = memoize.cache;
+      // 得到缓存地址
+      // 没有定义 hasher 则将缓存函数的参数 key 视为缓存地址
       var address = '' + (hasher ? hasher.apply(this, arguments) : key);
+      // 缓存未命中，则计算之，并将结果存入
       if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
       return cache[address];
     };
+    // 初始化记忆函数的缓存
+    // 并将缓存绑定到了缓存函数的 cache 属性上
     memoize.cache = {};
     return memoize;
   };
 
-  // Delays a function for the given number of milliseconds, and then calls
-  // it with the arguments supplied.
+  // setTimeout
   _.delay = restArgs(function(func, wait, args) {
     return setTimeout(function() {
       return func.apply(null, args);
     }, wait);
   });
 
-  // Defers a function, scheduling it to run after the current call stack has
-  // cleared.
+  // 延迟执行某函数，直到函数调用栈为空时再执行
   _.defer = _.partial(_.delay, _, 1);
 
   // Returns a function, that, when invoked, will only be triggered at most once
@@ -1434,8 +1492,7 @@
     return obj === void 0;
   };
 
-  // Shortcut function for checking if an object has a given property directly
-  // on itself (in other words, not on a prototype).
+  // 检测一个 object 是否有某一属性的快捷方式（只检测其自由属性，不是原型链上的属性）
   _.has = function(obj, key) {
     return obj != null && hasOwnProperty.call(obj, key);
   };
@@ -1450,7 +1507,7 @@
     return this;
   };
 
-  // Keep the identity function around for default iteratees.
+  // 进行默认迭代的身份函数
   _.identity = function(value) {
     return value;
   };
