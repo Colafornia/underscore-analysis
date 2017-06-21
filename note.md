@@ -1,5 +1,7 @@
 在阅读源码过程中的知识点 **简记**
 
+![cover](http://o7ts2uaks.bkt.clouddn.com/Underscore.png)
+
 1. 关于 `void 0`
 
    > `void` 操作符无论后面表达式是什么都会返回 `undefined`
@@ -22,3 +24,5 @@
    - apply 、 call 、bind 三者都可以利用后续参数传参
    - bind 是返回改变上下文后的函数，便于稍后调用；apply 、 call 则是改变上下文后立即执行该函数
    - apply 、 call 接受参数的方式不同，apply 要将参数放入数组里传入，call 要把参数按顺序挨个传入
+
+3.
