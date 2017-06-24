@@ -859,21 +859,22 @@
   };
 
   // Function (ahem) Functions
-  // ------------------
+  // 函数的函数集
 
-  // Determines whether to execute a function as a constructor
-  // or a normal function with the provided arguments.
+  // 解决如果 bind 所返回函数被作为构造函数 new 的情况
+  // new 的话需要判断函数是否有返回值，有返回值且返回值是对象，就返回这个对象，否则要返回构造实例
   var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
+    // 非 new 调用 _.bind 返回的方法（即 bound）
+    // callingContext 不是 boundFunc 的一个实例
     if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
+    // new 调用
     var self = baseCreate(sourceFunc.prototype);
     var result = sourceFunc.apply(self, args);
     if (_.isObject(result)) return result;
     return self;
   };
 
-  // Create a function bound to a given object (assigning `this`, and arguments,
-  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
-  // available.
+  // 后来在 ES5 中所支持的 Function.bind
   _.bind = restArgs(function(func, context, args) {
     if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
     var bound = restArgs(function(callArgs) {
@@ -1437,7 +1438,7 @@
     return toString.call(obj) === '[object Array]';
   };
 
-  // Is a given variable an object?
+  // 判断给定变量是否是 Object
   _.isObject = function(obj) {
     var type = typeof obj;
     return type === 'function' || type === 'object' && !!obj;
@@ -1467,27 +1468,30 @@
     };
   }
 
-  // Is a given object a finite number?
+  // 判断变量是否为 isFinite
   _.isFinite = function(obj) {
     return !_.isSymbol(obj) && isFinite(obj) && !isNaN(parseFloat(obj));
   };
 
-  // Is the given value `NaN`?
+  // 判断变量是否为 `NaN`
   _.isNaN = function(obj) {
+    // 需在是数字的情况下判断
+    // 否则一切非数字字符串的，都是NaN
     return _.isNumber(obj) && isNaN(obj);
   };
 
-  // Is a given value a boolean?
+  // 判断变量是否为 boolean
   _.isBoolean = function(obj) {
+    // 通过是否为 true/false，或者是否为一个已声明未赋值的 var obj = new Bollean()
     return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
   };
 
-  // Is a given value equal to null?
+  // 判断变量是否为 null
   _.isNull = function(obj) {
     return obj === null;
   };
 
-  // Is a given variable undefined?
+  // 判断变量是否为 undefined
   _.isUndefined = function(obj) {
     return obj === void 0;
   };
@@ -1498,7 +1502,7 @@
   };
 
   // Utility Functions
-  // -----------------
+  // 工具函数组
 
   // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
   // previous owner. Returns a reference to the Underscore object.
