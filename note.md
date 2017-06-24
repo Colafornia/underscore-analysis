@@ -71,3 +71,25 @@
      });
    ```
    可以发现，underscore 中对于 `bind` 的实现考虑到了如果 `bind` 所返回函数被作为构造函数 new 的情况，此时应通过具体例子判断最后 return 的是函数执行结果还是一个实例。
+
+4. bind 的一个主要应用: **偏函数**
+
+   偏函数是一种高阶函数，用于“把一个函数的某些参数给固定住（也就是设置默认值），返回一个新的函数，调用这个新函数会更简单”，与柯里化的概念有些相似。
+
+   underscore 通过 `_.partial()` 实现了偏函数的创造器（也是基于内部函数 `executeBound` 来保持上下文一致）。
+
+   ```javascript
+   // 一个实例
+   var substract = function (a, b) {
+       return b - a;
+   };
+
+   sub5 = _.partail(substract, 5);
+
+   sub5(20); // => 15
+
+   // 通过使用默认占位符'_'，先赋值b，暂缓对a的赋值
+   subFrom20 = _.partail(substract, _, 20);
+
+   subFrom20(5); // => 15
+   ```

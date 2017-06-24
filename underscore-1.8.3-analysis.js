@@ -859,16 +859,24 @@
   };
 
   // Function (ahem) Functions
-  // 函数的函数集
+  // 函数的函数集 ? 还是应该叫高阶函数（操作函数的函数，接受一个或多个函数作为参数，并返回一个新函数）？
 
+  // 处理绑定上下文与执行过程
   // 解决如果 bind 所返回函数被作为构造函数 new 的情况
   // new 的话需要判断函数是否有返回值，有返回值且返回值是对象，就返回这个对象，否则要返回构造实例
+  // sourceFunc 待绑定函数
+  // boundFunc 绑定后函数
+  // content 待绑定上下文
+  // callingContext 执行上下文
+  // args 函数执行所需参数
   var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
     // 非 new 调用 _.bind 返回的方法（即 bound）
     // callingContext 不是 boundFunc 的一个实例
     if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
     // new 调用
+    // self 为通过 new 生成的一个构造函数实例
     var self = baseCreate(sourceFunc.prototype);
+    // 得到返回值
     var result = sourceFunc.apply(self, args);
     if (_.isObject(result)) return result;
     return self;
@@ -892,10 +900,12 @@
   // _.partial 是一个偏函数创造器
   // 可以通过重置 _.partial.placeholder 自定义一个占位符
   _.partial = restArgs(function(func, boundArgs) {
+    // 读取内置占位符，这个占位符是可以替换的
     var placeholder = _.partial.placeholder;
     var bound = function() {
       var position = 0, length = boundArgs.length;
       var args = Array(length);
+      // 用新的数组 args 存储最终调用时的参数
       for (var i = 0; i < length; i++) {
         args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i];
       }
@@ -909,9 +919,7 @@
 
   _.partial.placeholder = _;
 
-  // Bind a number of an object's methods to that object. Remaining arguments
-  // are the method names to be bound. Useful for ensuring that all callbacks
-  // defined on an object belong to it.
+  // 绑定对象 obj 的所有指定成员方法中的执行上下文到 obj
   _.bindAll = restArgs(function(obj, keys) {
     keys = flatten(keys, false, false);
     var index = keys.length;
