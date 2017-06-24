@@ -72,7 +72,7 @@
    ```
    可以发现，underscore 中对于 `bind` 的实现考虑到了如果 `bind` 所返回函数被作为构造函数 new 的情况，此时应通过具体例子判断最后 return 的是函数执行结果还是一个实例。
 
-4. bind 的一个主要应用: **偏函数**
+4. bind 的一个重要应用: **偏函数**
 
    偏函数是一种高阶函数，用于“把一个函数的某些参数给固定住（也就是设置默认值），返回一个新的函数，调用这个新函数会更简单”，与柯里化的概念有些相似。
 
@@ -93,3 +93,10 @@
 
    subFrom20(5); // => 15
    ```
+
+5. js 中的递归与尾调用
+
+首先需要阅读 [Understanding recursion in functional JavaScript programming](http://www.integralist.co.uk/posts/js-recursion.html)
+
+① 递归存在问题，每次调用都会耗费内存（形成调用栈来储存调用位置和内部变量等信息），开销昂贵，运算规模较大时会出现 `Maxium call stack size exceeded`
+② 执行尾调用时，程序无需储存调用栈的值，直接在最后一次调用时输出函数运算结果，大大节省内存，ES6已支持尾调用优化（只在严格模式下开启）
