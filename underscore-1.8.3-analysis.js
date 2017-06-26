@@ -1156,8 +1156,8 @@
     return values;
   };
 
-  // Returns the results of applying the iteratee to each element of the object.
-  // In contrast to _.map it returns an object.
+  // 对 object 的每一个元素进行迭代
+  // 注意与 _.map 方法进行对比，这个方法返回的是一个 object
   _.mapObject = function(obj, iteratee, context) {
     iteratee = cb(iteratee, context);
     var keys = _.keys(obj),

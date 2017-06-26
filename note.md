@@ -96,7 +96,22 @@
 
 5. js 中的递归与尾调用
 
-首先需要阅读 [Understanding recursion in functional JavaScript programming](http://www.integralist.co.uk/posts/js-recursion.html)
+   首先需要阅读 [Understanding recursion in functional JavaScript programming](http://www.integralist.co.uk/posts/js-recursion.html)
 
-① 递归存在问题，每次调用都会耗费内存（形成调用栈来储存调用位置和内部变量等信息），开销昂贵，运算规模较大时会出现 `Maxium call stack size exceeded`
-② 执行尾调用时，程序无需储存调用栈的值，直接在最后一次调用时输出函数运算结果，大大节省内存，ES6已支持尾调用优化（只在严格模式下开启）
+   ① 递归存在问题，每次调用都会耗费内存（形成调用栈来储存调用位置和内部变量等信息），开销昂贵，运算规模较大时会出现 `Maxium call stack size exceeded`
+
+   ② 执行尾调用时，程序无需储存调用栈的值，直接在最后一次调用时输出函数运算结果，大大节省内存，ES6已支持尾调用优化（只在严格模式下开启）
+
+6. 循环🙅🏻‍ 迭代🙆🏻
+   underscore 对许多方法的封装中都有一个参数，叫 `iteratee迭代函数`
+
+   ```javascript
+   _.each = _.forEach = function(obj, iteratee, context) {
+      // blabla
+   }
+   // eg. _.each([1,2,3], function(elem) {return elem*2})
+   _.map = _.collect = function(obj, iteratee, context) {
+      // blabla
+   }
+   ```
+   
