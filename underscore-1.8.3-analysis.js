@@ -1710,7 +1710,10 @@
     return template;
   };
 
-  // Add a "chain" function. Start chaining a wrapped Underscore object.
+  // 使之能够进行链式调用
+  // 将函数传给 _ 构造器以获取实例
+  // 给每个实例都赋予 _chain 属性，作为该函数是否能链式调用的标志
+  // 再返回这个实例以实现链式调用
   _.chain = function(obj) {
     var instance = _(obj);
     instance._chain = true;
@@ -1728,7 +1731,8 @@
     return instance._chain ? _(obj).chain() : obj;
   };
 
-  // Add your own custom functions to the Underscore object.
+  // 可以向 underscore 上挂载自己的方法
+  // 使之支持 OOP _(....).map 调用
   _.mixin = function(obj) {
     _.each(_.functions(obj), function(name) {
       var func = _[name] = obj[name];
@@ -1741,7 +1745,7 @@
     return _;
   };
 
-  // Add all of the Underscore functions to the wrapper object.
+  // 把挂载在 _ 对象上的方法都添加到 _.prototype 上，使之支持 OOP
   _.mixin(_);
 
   //  把 Array 原型链上有的方法都添加到 underscore 全局环境的原型链中

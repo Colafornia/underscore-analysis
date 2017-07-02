@@ -1,6 +1,4 @@
-在阅读源码过程中的知识点 **简记**
-
-![cover](http://o7ts2uaks.bkt.clouddn.com/Underscore.png)
+在阅读源码过程中的知识点tips
 
 1. 关于 `void 0`
 
@@ -84,7 +82,7 @@
        return b - a;
    };
 
-   sub5 = _.partail(substract, 5);
+   sub5 = _.partial(substract, 5);
 
    sub5(20); // => 15
 
@@ -114,4 +112,11 @@
       // blabla
    }
    ```
-   
+
+7. 模板引擎实现思路
+  ![template](http://o7ts2uaks.bkt.clouddn.com/%E6%A8%A1%E6%9D%BF%E5%BC%95%E6%93%8E.png)
+  - 利用正则表达式分解出普通字符串和模板标识符，(插值语句<%=%>的正则表达式为/<%=([\s\S]+?)%>/g)
+  - 将模板标识符转换成js表达式
+  - 生成待执行渲染函数
+  - 将数据填入执行，生成渲染的字符串
+

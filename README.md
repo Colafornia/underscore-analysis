@@ -1,5 +1,7 @@
 # underscore-analysis
 
+![cover](http://o7ts2uaks.bkt.clouddn.com/Underscore.png)
+
 [源码阅读过程中的知识点简记](https://github.com/MechanicianW/underscore-analysis/blob/master/note.md)
 
 选择做 underscore.js 源码分析的原因
